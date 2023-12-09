@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  nome           String
+  email          String          @unique
+  senha          String
+  anuncios       Anuncio[]
+  ListaDeDesejos ListaDeDesejos?
+}
+
+model Anuncio {
+  id               Int             @id @default(autoincrement())
+  titulo           String
+  descricao        String
+  vendedor         User            @relation(fields: [vendedorId], references: [id])
+  vendedorId       Int
+  estaAberto       Boolean         @default(true)
+  trocaTemporaria  Boolean         @default(false)
+  periodoDias      Int? // Opcional
+  localizacao      String?
+  categoria        String?
+  estadoProduto    String?
+  ofertas          Oferta[]
+  listaDeDesejosId Int?
+  ListaDeDesejos   ListaDeDesejos? @relation(fields: [listaDeDesejosId], references: [id])
+  Carrinho         Carrinho?       @relation(fields: [carrinhoId], references: [id])
+  carrinhoId       Int?
+}
+
+model Oferta {
+  id          Int     @id @default(autoincrement())
+  compradorId Int
+  vendedorId  Int
+  anuncio     Anuncio @relation(fields: [anuncioId], references: [id])
+  anuncioId   Int
+  oferta      String
+  aceito      Boolean @default(false)
+}
+
+model ListaDeDesejos {
+  id      Int       @id @default(autoincrement())
+  userId  Int
+  user    User      @relation(fields: [userId], references: [id])
+  Anuncio Anuncio[]
+
+  @@unique([userId])
+}
+
+model Carrinho {
+  id       Int       @id @default(autoincrement())
+  userId   Int
+  anuncios Anuncio[]
+}
