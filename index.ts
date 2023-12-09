@@ -341,8 +341,6 @@ app.post("/accept/:oid", async (req: any, res: any) => {
       }
     });
 
-    
-
     const announce = await prisma.anuncio.update({
       where: {
         id: offer.anuncioId
@@ -355,7 +353,7 @@ app.post("/accept/:oid", async (req: any, res: any) => {
       return res.status(401).json({message: `Anúncio não está mais disponível`})
     }
 
-    return res.status(200);
+    return res.status(200).send();
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
@@ -664,10 +662,6 @@ app.post("/user/:uid/offer-from-cart", async (req: any, res: any) => {
 
   res.status(200).json({ message: 'Ofertas criadas com sucesso', offers });
 });
-
-
-
-
 
 
 const PORT = 8080;
