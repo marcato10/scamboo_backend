@@ -14,6 +14,10 @@ model User {
   senha          String
   anuncios       Anuncio[]
   ListaDeDesejos ListaDeDesejos?
+  Conversa       Conversa?       @relation(fields: [conversaId], references: [id])
+  conversaId     Int?
+
+  Mensagem Mensagem[]
 }
 
 model Anuncio {
@@ -58,4 +62,21 @@ model Carrinho {
   id       Int       @id @default(autoincrement())
   userId   Int
   anuncios Anuncio[]
+}
+
+model Conversa {
+  id            Int        @id @default(autoincrement())
+  participantes User[]
+  mensagens     Mensagem[]
+  isPublica     Boolean    @default(false)
+}
+
+model Mensagem {
+  id         Int      @id @default(autoincrement())
+  conteudo   String
+  fromUserID Int
+  fromUser   User     @relation(fields: [fromUserID], references: [id])
+  conversaId Int
+  conversa   Conversa @relation(fields: [conversaId], references: [id])
+  createdAt  DateTime @default(now())
 }

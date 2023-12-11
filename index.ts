@@ -1,4 +1,4 @@
-import { Anuncio, Carrinho, ListaDeDesejos, Oferta, PrismaClient, User } from "@prisma/client";
+import { Anuncio, Carrinho, Conversa, ListaDeDesejos, Oferta, PrismaClient, User } from "@prisma/client";
 import { Request, Response } from 'express';
 
 const prisma = new PrismaClient();
@@ -663,8 +663,158 @@ app.post("/user/:uid/offer-from-cart", async (req: any, res: any) => {
   res.status(200).json({ message: 'Ofertas criadas com sucesso', offers });
 });
 
+//CONVERSAS
+//Cria conversa
+app.post("/conversa", async (req: any, res: any) => {
+  const { participantesIds, isPublica } = req.body;
 
-const PORT = 8080;
+  if (!Array.isArray(participantesIds) || participantesIds.length === 0) {
+    return res.status(400).json({ error: 'É necessário ao menos um participante' });
+  }
+
+  const conversa = await prisma.conversa.create({
+    data: {
+      isPublica,
+      participantes: {
+        connect: participantesIds.map(id => ({ id }))
+      }
+    }
+  });
+  res.status(201).json(conversa);
+});
+
+//Envia mensagem
+app.post("/conversa/:conversaId/mensagem", async (req: any, res: any) => {
+  const conversaId = parseInt(req.params.conversaId);
+  const { conteudo, fromUserID } = req.body;
+
+  if (isNaN(conversaId) || !conteudo || isNaN(fromUserID)) {
+    return res.status(400).json({ error: 'Dados inválidos' });
+  }
+
+  const mensagem = await prisma.mensagem.create({
+    data: {
+      conteudo,
+      fromUserID,
+      conversaId
+    }
+  });
+
+  res.status(201).json(mensagem);
+});
+
+//Puxa mensagens de uma conversa
+app.get("/conversa/:conversaId/mensagens", async (req: any, res: any) => {
+  const conversaId = parseInt(req.params.conversaId);
+
+  if (isNaN(conversaId)) {
+    return res.status(400).json({ error: 'ID da conversa inválido' });
+  }
+
+  const mensagens = await prisma.mensagem.findMany({
+    where: {
+      conversaId
+    },
+    orderBy: {
+      createdAt: 'asc'
+    }
+  });
+
+  res.status(200).json(mensagens);
+});
+
+//Lista as conversas privadas de um usuário
+app.get("/user/:uid/private/conversas",async (req:any,res:any)=>{
+
+  const userId:number = parseInt(req.params.uid);
+  if(isNaN(userId)){
+    return res.status(400).json({ error: 'ID de usuário inválido' });
+  }
+    const lookConversas:Conversa[] = await prisma.conversa.findMany({
+      where: {
+        AND: [
+          {participantes :{
+          some:{
+            id: userId
+          }
+        }},
+        {isPublica:false}
+      ]
+      }
+    });
+
+    if (!lookConversas) {
+      return res.status(404).json({ error: 'Nenhuma conversa encontrada' });
+    }
+
+    return res.status(200).json(lookConversas);
+  
+
+});
+
+//Lista as conversas públicas (de fórum) de um usuário
+app.get("/user/:uid/public/conversas",async (req:any,res:any)=>{
+
+  const userId:number = parseInt(req.params.uid);
+  if(isNaN(userId)){
+    return res.status(400).json({ error: 'ID de usuário inválido' });
+  }
+    const lookConversas:Conversa[] = await prisma.conversa.findMany({
+      where: {
+        AND: [
+          {participantes :{
+          some:{
+            id: userId
+          }
+        }},
+        {isPublica:true}
+      ]
+      }
+    });
+
+    if (!lookConversas) {
+      return res.status(404).json({ error: 'Nenhuma conversa encontrada' });
+    }
+
+    return res.status(200).json(lookConversas);
+  
+
+});
+
+//Adiciona um participante na conversa
+app.post("/conversa/:conversaId/participante/:userId", async (req: any, res: any) => {
+  const conversaId = parseInt(req.params.conversaId);
+  const userId = parseInt(req.params.userId);
+
+  if (isNaN(conversaId) || isNaN(userId)) {
+    return res.status(400).json({ error: 'IDs inválidos' });
+  }
+
+  try {
+    const conversaAtualizada = await prisma.conversa.update({
+      where: {
+        id: conversaId
+      },
+      data: {
+        participantes: {
+          connect: [{ id: userId }]
+        }
+      },
+      include: {
+        participantes: true
+      }
+    });
+
+    res.status(200).json(conversaAtualizada);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao adicionar participante na conversa' });
+  }
+});
+
+
+
+
+const PORT:number = 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
