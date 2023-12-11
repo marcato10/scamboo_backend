@@ -14,10 +14,8 @@ model User {
   senha          String
   anuncios       Anuncio[]
   ListaDeDesejos ListaDeDesejos?
-  Conversa       Conversa?       @relation(fields: [conversaId], references: [id])
-  conversaId     Int?
-
-  Mensagem Mensagem[]
+  Conversas      Conversa[]      @relation("UserConversas")
+  Mensagem       Mensagem[]
 }
 
 model Anuncio {
@@ -66,7 +64,7 @@ model Carrinho {
 
 model Conversa {
   id            Int        @id @default(autoincrement())
-  participantes User[]
+  participantes User[]     @relation("UserConversas")
   mensagens     Mensagem[]
   isPublica     Boolean    @default(false)
 }
